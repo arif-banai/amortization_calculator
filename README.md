@@ -10,20 +10,20 @@ dotnet run --project src/Amortization.App
 
 ## Publish single EXE
 
-To build a self-contained single-file executable for Windows x64:
+To build a self-contained **single-file** executable for Windows x64 (native WPF DLLs are bundled into the exe):
 
 ```bash
-dotnet publish src/Amortization.App -c Release -r win-x64 -p:PublishSingleFile=true -p:SelfContained=true
+dotnet publish src/Amortization.App -c Release
 ```
 
-The output will be under `src/Amortization.App/bin/Release/net10.0-windows/win-x64/publish/`.
+The output will be under `src/Amortization.App/bin/Release/net10.0-windows/win-x64/publish/` — you should see only **Amortization.App.exe** in that folder.
 
 ## For end-users (published app)
 
 1. Open the `publish` folder (see path above, or the folder where you copied the published app).
 2. Double-click **Amortization.App.exe** to start the calculator.
 
-No separate .NET install is needed when published as self-contained. You can copy the EXE (and any other files in `publish` if not using single-file) to another Windows PC and run it the same way.
+No separate .NET install is needed when published as self-contained. You can copy **Amortization.App.exe** to another Windows PC and run it the same way.
 
 **If nothing happens when you double-click:** Republish the app (the latest build shows error messages instead of failing silently). Then run the EXE from a command prompt: open Command Prompt, `cd` to the folder containing `Amortization.App.exe`, and run `Amortization.App.exe`. Any error message will appear in a popup or in the console. Antivirus can sometimes block single-file apps when they extract; temporarily allow the EXE or add an exception if needed.
 
