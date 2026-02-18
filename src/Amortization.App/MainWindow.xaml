@@ -27,24 +27,47 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="Principal" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                <TextBox Grid.Column="1" Text="{Binding PrincipalText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" Padding="4,2"/>
-                <TextBlock Grid.Row="1" Text="Rate (%)" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding RateText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" Padding="4,2"/>
-                <TextBlock Grid.Row="2" Text="Term (years)" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding TermYearsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" Padding="4,2"/>
-                <TextBlock Grid.Row="3" Text="First payment date" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                <DatePicker Grid.Row="3" Grid.Column="1" SelectedDate="{Binding StartDate}" Margin="0,0,0,6" Padding="2"/>
+                <TextBlock Text="Principal ($)" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <TextBox Grid.Column="1" Text="{Binding PrincipalText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Padding="4,2"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PrincipalError}" Foreground="Red" FontSize="11" Margin="0,0,0,6" Visibility="{Binding PrincipalError, Converter={StaticResource StringToVisibility}}"/>
+                <TextBlock Grid.Row="2" Text="Rate (%)" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding RateText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Padding="4,2"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RateError}" Foreground="Red" FontSize="11" Margin="0,0,0,6" Visibility="{Binding RateError, Converter={StaticResource StringToVisibility}}"/>
+                <TextBlock Grid.Row="4" Text="Term (years)" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TermYearsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Padding="4,2"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding TermYearsError}" Foreground="Red" FontSize="11" Margin="0,0,0,6" Visibility="{Binding TermYearsError, Converter={StaticResource StringToVisibility}}"/>
+                <TextBlock Grid.Row="6" Text="First payment date" VerticalAlignment="Center" Margin="0,0,8,6" ToolTip="First payment date is the date of payment #1. Each subsequent payment is one month later."/>
+                <DatePicker Grid.Row="6" Grid.Column="1" SelectedDate="{Binding StartDate}" Margin="0,0,0,6" Padding="2"/>
             </Grid>
 
             <TextBlock Text="Extra payments" FontWeight="SemiBold" FontSize="14" Margin="0,16,0,8"/>
             <TextBlock Text="Recurring extra principal (per month)" Margin="0,0,0,4"/>
-            <TextBox Text="{Binding RecurringExtraText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" Padding="4,2"/>
+            <TextBox Text="{Binding RecurringExtraText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,4" Padding="4,2"/>
+            <TextBlock Text="{Binding RecurringExtraError}" Foreground="Red" FontSize="11" Margin="0,0,0,6" Visibility="{Binding RecurringExtraError, Converter={StaticResource StringToVisibility}}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <Button Content="+$50" Command="{Binding AddRecurringPresetCommand}" CommandParameter="50" Padding="6,4" Margin="0,0,6,0"/>
+                <Button Content="+$100" Command="{Binding AddRecurringPresetCommand}" CommandParameter="100" Padding="6,4" Margin="0,0,6,0"/>
+                <Button Content="+$200" Command="{Binding AddRecurringPresetCommand}" CommandParameter="200" Padding="6,4"/>
+            </StackPanel>
 
+            <TextBlock Text="Quick-add lump sum" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <DatePicker SelectedDate="{Binding QuickAddDate}" Padding="2" Margin="0,0,4,0"/>
+                <TextBox Grid.Column="1" Text="{Binding QuickAddAmountText, UpdateSourceTrigger=PropertyChanged}" Padding="4,2" Margin="0,0,4,0"/>
+                <Button Grid.Column="2" Content="Add" Command="{Binding AddQuickLumpSumCommand}" Padding="8,4"/>
+            </Grid>
             <TextBlock Text="Lump sums (date + amount)" Margin="0,0,0,4"/>
             <DataGrid x:Name="LumpSumsGrid" ItemsSource="{Binding LumpSums}" SelectedIndex="{Binding SelectedLumpSumIndex, Mode=TwoWay}"
-                      AutoGenerateColumns="False" Height="120" Margin="0,0,0,6"
+                      AutoGenerateColumns="False" Height="100" Margin="0,0,0,6"
                       CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single">
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="Date" Width="110">
@@ -57,12 +80,14 @@
                     <DataGridTextColumn Header="Amount" Binding="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
                 </DataGrid.Columns>
             </DataGrid>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                 <Button Content="Add lump sum" Command="{Binding AddLumpSumCommand}" Padding="8,4" Margin="0,0,8,0"/>
                 <Button Content="Remove selected" Command="{Binding RemoveSelectedLumpSumCommand}" Padding="8,4"/>
             </StackPanel>
 
-            <Button Content="Calculate" Command="{Binding CalculateCommand}" Padding="12,6" FontSize="14" HorizontalAlignment="Stretch"/>
+            <CheckBox Content="Auto-recalculate when inputs change" IsChecked="{Binding AutoRecalculate}" Margin="0,0,0,8"/>
+            <Button Content="Recalculate" Command="{Binding CalculateCommand}" Padding="12,6" FontSize="14" HorizontalAlignment="Stretch"/>
+            <TextBlock Text="{Binding LastUpdatedText}" FontSize="11" Foreground="Gray" Margin="0,6,0,0" Visibility="{Binding LastUpdatedText, Converter={StaticResource StringToVisibility}}"/>
         </StackPanel>
 
         <!-- Right: Summary + Schedule -->
@@ -70,54 +95,142 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
-                <Border BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,12,0" MinWidth="160">
+            <!-- Summary: Savings first, then compact Base vs With extras -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                <Border BorderBrush="#888" BorderThickness="1" CornerRadius="4" Padding="16" Margin="0,0,0,8">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Opacity" Value="1"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasExtras}" Value="False">
+                                    <Setter Property="Opacity" Value="0.6"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
                     <StackPanel>
-                        <TextBlock Text="Base schedule" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBlock><Run Text="Payment: "/><Run Text="{Binding BaseSummary.MonthlyPayment, StringFormat='{}{0:C2}'}"/></TextBlock>
-                        <TextBlock><Run Text="Total interest: "/><Run Text="{Binding BaseSummary.TotalInterest, StringFormat='{}{0:C2}'}"/></TextBlock>
-                        <TextBlock><Run Text="Payoff: "/><Run Text="{Binding BaseSummary.PayoffDate, StringFormat='yyyy-MM-dd'}"/></TextBlock>
+                        <TextBlock Text="Savings" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
+                        <TextBlock Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}">
+                            <Run Text="Interest saved: " FontWeight="SemiBold"/><Run Text="{Binding InterestSaved, Mode=OneWay, StringFormat='{}{0:C2}'}"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,2,0,0" Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}">
+                            <Run Text="Time saved: "/><Run Text="{Binding PaymentsSaved, Mode=OneWay}"/><Run Text=" payments"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,2,0,0" Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}">
+                            <Run Text="New payoff: "/><Run Text="{Binding NewPayoffDate, Mode=OneWay, StringFormat='yyyy-MM-dd'}"/>
+                        </TextBlock>
+                        <TextBlock Text="Add extra payments to see savings." Margin="0,4,0,0" Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
                     </StackPanel>
                 </Border>
-                <Border BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,12,0" MinWidth="160">
-                    <StackPanel>
-                        <TextBlock Text="With extras" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBlock><Run Text="Payment: "/><Run Text="{Binding ExtraSummary.MonthlyPayment, StringFormat='{}{0:C2}'}"/></TextBlock>
-                        <TextBlock><Run Text="Total interest: "/><Run Text="{Binding ExtraSummary.TotalInterest, StringFormat='{}{0:C2}'}"/></TextBlock>
-                        <TextBlock><Run Text="Payoff: "/><Run Text="{Binding ExtraSummary.PayoffDate, StringFormat='yyyy-MM-dd'}"/></TextBlock>
-                    </StackPanel>
-                </Border>
-                <Border BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="12" MinWidth="140">
-                    <StackPanel>
-                        <TextBlock Text="Savings" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBlock><Run Text="Interest saved: "/><Run Text="{Binding InterestSaved, Mode=OneWay, StringFormat='{}{0:C2}'}"/></TextBlock>
-                        <TextBlock><Run Text="Payments saved: "/><Run Text="{Binding PaymentsSaved, Mode=OneWay}"/></TextBlock>
-                    </StackPanel>
-                </Border>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,6,0">
+                        <StackPanel>
+                            <TextBlock Text="Base schedule" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock><Run Text="Payment: "/><Run Text="{Binding BaseSummary.MonthlyPayment, StringFormat='{}{0:C2}'}"/></TextBlock>
+                            <TextBlock><Run Text="Total interest: "/><Run Text="{Binding BaseSummary.TotalInterest, StringFormat='{}{0:C2}'}"/></TextBlock>
+                            <TextBlock><Run Text="Payoff: "/><Run Text="{Binding BaseSummary.PayoffDate, StringFormat='yyyy-MM-dd'}"/></TextBlock>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="10" Margin="6,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="With extras" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,4"/>
+                            <TextBlock><Run Text="Payment: "/><Run Text="{Binding ExtraSummary.MonthlyPayment, StringFormat='{}{0:C2}'}"/></TextBlock>
+                            <TextBlock><Run Text="Total interest: "/><Run Text="{Binding ExtraSummary.TotalInterest, StringFormat='{}{0:C2}'}"/></TextBlock>
+                            <TextBlock><Run Text="Payoff: "/><Run Text="{Binding ExtraSummary.PayoffDate, StringFormat='yyyy-MM-dd'}"/></TextBlock>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </StackPanel>
 
             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
                 <RadioButton Content="Base schedule" IsChecked="{Binding SelectedScenario, Converter={StaticResource ScenarioConverter}, ConverterParameter=Base, Mode=TwoWay}" GroupName="Scenario" Margin="0,0,16,0"/>
                 <RadioButton Content="With extras" IsChecked="{Binding SelectedScenario, Converter={StaticResource ScenarioConverter}, ConverterParameter=WithExtras, Mode=TwoWay}" GroupName="Scenario" Margin="0,0,16,0"/>
-                <Button Content="Export CSV..." Command="{Binding ExportCsvCommand}" Padding="8,4" VerticalAlignment="Center"/>
+                <Menu VerticalAlignment="Center">
+                    <MenuItem Header="Export CSV">
+                        <MenuItem Header="Export current view" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.Current}"/>
+                        <MenuItem Header="Export base schedule" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.Base}"/>
+                        <MenuItem Header="Export with extras" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.WithExtras}"/>
+                    </MenuItem>
+                </Menu>
+                <TextBlock Text="{Binding ExportStatusMessage}" Foreground="Green" FontSize="11" VerticalAlignment="Center" Margin="12,0,0,0" Visibility="{Binding ExportStatusMessage, Converter={StaticResource StringToVisibility}}"/>
             </StackPanel>
 
-            <DataGrid Grid.Row="2" ItemsSource="{Binding ScheduleRows}" AutoGenerateColumns="False"
+            <!-- Schedule toolbar: view toggle, jump-to, column visibility -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,4">
+                <TextBlock Text="View: " VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <RadioButton Content="Monthly" IsChecked="{Binding IsYearlyView, Converter={StaticResource InverseBool}, Mode=TwoWay}" GroupName="ViewMode" Margin="0,0,8,0"/>
+                <RadioButton Content="Yearly" IsChecked="{Binding IsYearlyView, Mode=TwoWay}" GroupName="ViewMode" Margin="0,0,16,0"/>
+                <TextBlock Text="Jump to payment #" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBox Text="{Binding JumpToPaymentText, UpdateSourceTrigger=PropertyChanged}" Width="60" Padding="4,2" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <Button Content="Go" Command="{Binding JumpToPaymentCommand}" Padding="6,2" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                <CheckBox Content="Show cumulative interest" IsChecked="{Binding ShowCumulativeInterestColumn}" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <DataGrid Grid.Row="3" x:Name="ScheduleGrid" ItemsSource="{Binding DisplayScheduleRows}" AutoGenerateColumns="False"
+                      FrozenColumnCount="2"
+                      RowHeight="26"
                       IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
                       AlternatingRowBackground="#f8f8f8" HeadersVisibility="Column">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="#" Binding="{Binding PaymentNumber}" Width="40"/>
-                    <DataGridTextColumn Header="Date" Binding="{Binding PaymentDate, StringFormat='yyyy-MM-dd'}" Width="90"/>
-                    <DataGridTextColumn Header="Payment" Binding="{Binding ScheduledPayment, StringFormat='F2'}" Width="80"/>
-                    <DataGridTextColumn Header="Interest" Binding="{Binding Interest, StringFormat='F2'}" Width="80"/>
-                    <DataGridTextColumn Header="Principal" Binding="{Binding ScheduledPrincipal, StringFormat='F2'}" Width="80"/>
-                    <DataGridTextColumn Header="Extra" Binding="{Binding ExtraPrincipal, StringFormat='F2'}" Width="70"/>
-                    <DataGridTextColumn Header="Total Prin." Binding="{Binding TotalPrincipal, StringFormat='F2'}" Width="80"/>
-                    <DataGridTextColumn Header="Balance" Binding="{Binding EndingBalance, StringFormat='F2'}" Width="90"/>
-                    <DataGridTextColumn Header="Cum. Interest" Binding="{Binding CumulativeInterest, StringFormat='F2'}" Width="90"/>
+                    <DataGridTextColumn Header="#" Binding="{Binding PaymentNumber}" Width="44"/>
+                    <DataGridTextColumn Header="Date" Binding="{Binding PaymentDate, StringFormat='yyyy-MM-dd'}" Width="92"/>
+                    <DataGridTextColumn Header="Payment" Binding="{Binding ScheduledPayment, StringFormat='{}{0:C2}'}" Width="88">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Interest" Binding="{Binding Interest, StringFormat='{}{0:C2}'}" Width="88">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Principal" Binding="{Binding ScheduledPrincipal, StringFormat='{}{0:C2}'}" Width="88">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Extra" Binding="{Binding ExtraPrincipal, StringFormat='{}{0:C2}'}" Width="72">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Total Prin." Binding="{Binding TotalPrincipal, StringFormat='{}{0:C2}'}" Width="88">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Balance" Binding="{Binding EndingBalance, StringFormat='{}{0:C2}'}" Width="92">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Cum. Interest" Binding="{Binding CumulativeInterest, StringFormat='{}{0:C2}'}" Width="96" Visibility="{Binding ShowCumulativeInterestColumn, Converter={StaticResource BoolToVisibility}}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

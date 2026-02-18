@@ -11,6 +11,11 @@ public partial class MainWindow : Window
         var vm = (ViewModels.MainViewModel)DataContext;
         vm.GetExportFilePath = GetExportFilePath;
         vm.ShowMessage = msg => MessageBox.Show(msg, "Amortization Calculator", MessageBoxButton.OK, MessageBoxImage.Information);
+        vm.ScrollToRow = index =>
+        {
+            if (index >= 0 && index < vm.DisplayScheduleRows.Count)
+                ScheduleGrid.ScrollIntoView(vm.DisplayScheduleRows[index]);
+        };
     }
 
     private string? GetExportFilePath()

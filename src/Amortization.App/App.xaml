@@ -5,5 +5,8 @@
              Startup="App_Startup">
     <Application.Resources>
         <conv:ScenarioToBoolConverter x:Key="ScenarioConverter"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:StringToVisibilityConverter x:Key="StringToVisibility"/>
+        <conv:InverseBoolConverter x:Key="InverseBool"/>
     </Application.Resources>
 </Application>
