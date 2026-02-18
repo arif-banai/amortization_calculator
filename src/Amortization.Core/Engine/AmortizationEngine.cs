@@ -27,6 +27,8 @@ public sealed class AmortizationEngine
         var rows = new List<ScheduleRow>();
         decimal balance = terms.Principal;
         decimal cumulativeInterest = 0m;
+        decimal cumulativeTotalPaid = 0m;
+        decimal cumulativePrincipal = 0m;
         int paymentNumber = 0;
         DateTime paymentDate;
         int decimals = options.CurrencyDecimals;
@@ -56,6 +58,11 @@ public sealed class AmortizationEngine
                 totalPrincipal = balance;
                 actualScheduledPayment = RoundMoney(interest + totalPrincipal, decimals);
                 cumulativeInterest += interest;
+                cumulativeTotalPaid += actualScheduledPayment + extraPrincipal;
+                cumulativePrincipal += totalPrincipal;
+                decimal percentPaidOff = terms.Principal > 0 ? RoundMoney(cumulativePrincipal / terms.Principal * 100m, decimals) : 100m;
+                decimal totalPaymentThisPeriod = actualScheduledPayment + extraPrincipal;
+                decimal interestPercent = totalPaymentThisPeriod > 0 ? RoundMoney(interest / totalPaymentThisPeriod * 100m, decimals) : 0m;
                 decimal lastScheduledPrincipal = totalPrincipal - extraPrincipal;
                 if (lastScheduledPrincipal < 0) lastScheduledPrincipal = 0;
                 rows.Add(new ScheduleRow(
@@ -67,11 +74,20 @@ public sealed class AmortizationEngine
                     extraPrincipal,
                     totalPrincipal,
                     endingBalance,
-                    cumulativeInterest));
+                    cumulativeInterest,
+                    cumulativeTotalPaid,
+                    cumulativePrincipal,
+                    percentPaidOff,
+                    interestPercent));
                 break;
             }
 
             cumulativeInterest += interest;
+            cumulativeTotalPaid += actualScheduledPayment + extraPrincipal;
+            cumulativePrincipal += totalPrincipal;
+            decimal percentPaidOffNormal = terms.Principal > 0 ? RoundMoney(cumulativePrincipal / terms.Principal * 100m, decimals) : 100m;
+            decimal totalPaymentNormal = actualScheduledPayment + extraPrincipal;
+            decimal interestPercentNormal = totalPaymentNormal > 0 ? RoundMoney(interest / totalPaymentNormal * 100m, decimals) : 0m;
             rows.Add(new ScheduleRow(
                 paymentNumber,
                 paymentDate,
@@ -81,7 +97,11 @@ public sealed class AmortizationEngine
                 extraPrincipal,
                 totalPrincipal,
                 endingBalance,
-                cumulativeInterest));
+                cumulativeInterest,
+                cumulativeTotalPaid,
+                cumulativePrincipal,
+                percentPaidOffNormal,
+                interestPercentNormal));
             balance = endingBalance;
         }
 

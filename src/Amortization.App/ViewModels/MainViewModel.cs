@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows.Input;
 using System.Windows.Threading;
 using Amortization.App.Services;
 using Amortization.Core.Domain;
@@ -11,7 +10,8 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Amortization.App.ViewModels;
 
-public enum SelectedScenario { Base, WithExtras }
+/// <summary>Controls which schedule is shown in the table (grid).</summary>
+public enum TableScheduleMode { Base, WithExtras }
 
 public enum ExportScope { Current, Base, WithExtras }
 
@@ -53,6 +53,13 @@ public sealed partial class MainViewModel : ObservableObject
     private string _recurringExtraError = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPropertyValue), nameof(ShowLtvColumnInTable))]
+    private string _propertyValueText = "";
+
+    [ObservableProperty]
+    private string _propertyValueError = "";
+
+    [ObservableProperty]
     private DateTime _quickAddDate = DateTime.Today;
 
     [ObservableProperty]
@@ -68,15 +75,51 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _showCumulativeInterestColumn = true;
 
     [ObservableProperty]
-    private SelectedScenario _selectedScenario = SelectedScenario.Base;
+    [NotifyPropertyChangedFor(nameof(ShowExtraColumns), nameof(ShowExtraPrincipalColumnInTable), nameof(ShowTotalPrincipalColumnInTable), nameof(IsBaseTableMode), nameof(IsExtrasTableMode), nameof(GridViewingLabel), nameof(GridViewingHint))]
+    private TableScheduleMode _tableScheduleMode = TableScheduleMode.Base;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScheduleRowHeight))]
+    private bool _isCompactDensity;
+
+    public double ScheduleRowHeight => IsCompactDensity ? 26 : 36;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowExtraPrincipalColumnInTable))]
+    private bool _showExtraPrincipalColumn = true;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowTotalPrincipalColumnInTable))]
+    private bool _showTotalPrincipalColumn = true;
+
+    [ObservableProperty]
+    private bool _showBalanceColumn = true;
+
+    [ObservableProperty]
+    private bool _showCumulativeTotalPaidColumn;
+
+    [ObservableProperty]
+    private bool _showCumulativePrincipalColumn;
+
+    [ObservableProperty]
+    private bool _showPercentPaidOffColumn;
+
+    [ObservableProperty]
+    private bool _showInterestPercentColumn;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowLtvColumnInTable))]
+    private bool _showLtvColumn;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(InterestSavedPercent))]
     private decimal _interestSaved;
 
     [ObservableProperty]
     private int _paymentsSaved;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(GridViewingHint))]
     private bool _hasExtras;
 
     [ObservableProperty]
@@ -85,14 +128,6 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _autoRecalculate;
-
-    /// <summary>When true and extras exist, table shows base schedule instead of with-extras. Only visible in UI when HasExtras.</summary>
-    [ObservableProperty]
-    private bool _showBaseInTable;
-
-    /// <summary>Selected tab index when HasExtras: 0 = Base schedule, 1 = With extras. Default 1.</summary>
-    [ObservableProperty]
-    private int _selectedScheduleTabIndex = 1;
 
     private int? _scrollToPaymentNumber;
 
@@ -104,8 +139,14 @@ public sealed partial class MainViewModel : ObservableObject
         DisplayScheduleRows = new ObservableCollection<ScheduleRowViewModel>();
         BaseDisplayScheduleRows = new ObservableCollection<ScheduleRowViewModel>();
         ExtraDisplayScheduleRows = new ObservableCollection<ScheduleRowViewModel>();
+        ActiveScheduleRows = new ObservableCollection<ScheduleRowViewModel>();
         BaseSummary = new ScheduleSummaryViewModel();
         ExtraSummary = new ScheduleSummaryViewModel();
+        LumpSums.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(ExtrasSummaryText));
+            OnPropertyChanged(nameof(TotalLumpSumAmount));
+        };
     }
 
     public Func<string?>? GetExportFilePath { get; set; }
@@ -116,8 +157,33 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<ScheduleRowViewModel> DisplayScheduleRows { get; }
     public ObservableCollection<ScheduleRowViewModel> BaseDisplayScheduleRows { get; }
     public ObservableCollection<ScheduleRowViewModel> ExtraDisplayScheduleRows { get; }
+    public ObservableCollection<ScheduleRowViewModel> ActiveScheduleRows { get; }
     public ScheduleSummaryViewModel BaseSummary { get; }
     public ScheduleSummaryViewModel ExtraSummary { get; }
+
+    public bool ShowExtraColumns => TableScheduleMode == TableScheduleMode.WithExtras;
+    public bool ShowExtraPrincipalColumnInTable => ShowExtraColumns && ShowExtraPrincipalColumn;
+    public bool ShowTotalPrincipalColumnInTable => ShowExtraColumns && ShowTotalPrincipalColumn;
+    public bool HasPropertyValue => decimal.TryParse(PropertyValueText, out var v) && v > 0;
+    public bool ShowLtvColumnInTable => ShowLtvColumn && HasPropertyValue;
+    public bool IsBaseTableMode => TableScheduleMode == TableScheduleMode.Base;
+    public bool IsExtrasTableMode => TableScheduleMode == TableScheduleMode.WithExtras;
+    public string GridViewingLabel => TableScheduleMode == TableScheduleMode.Base ? "Viewing: Base schedule" : "Viewing: With extras schedule";
+    public string GridViewingHint => HasExtras && TableScheduleMode == TableScheduleMode.Base ? "Extras configured but not applied to this table." : "";
+    public string PayoffDateDelta => FormatPayoffDateDelta(BaseSummary.PayoffDate, ExtraSummary.PayoffDate);
+
+    public string InterestSavedPercent
+    {
+        get
+        {
+            if (BaseSummary.TotalInterest <= 0 || InterestSaved <= 0) return "";
+            var pct = InterestSaved / BaseSummary.TotalInterest * 100;
+            return $"({pct:F1}%)";
+        }
+    }
+
+    public string ExtrasSummaryText => BuildExtrasSummaryText();
+    public decimal TotalLumpSumAmount => LumpSums.Where(x => decimal.TryParse(x.AmountText, out var a) && a > 0).Sum(x => decimal.Parse(x.AmountText));
 
     public DateTime? NewPayoffDate => HasExtras ? ExtraSummary.PayoffDate : (DateTime?)null;
 
@@ -129,17 +195,24 @@ public sealed partial class MainViewModel : ObservableObject
         private set => SetProperty(ref _scrollToPaymentNumber, value);
     }
 
-    /// <summary>Schedule result shown in the table: with-extras when HasExtras and not ShowBaseInTable, else base.</summary>
+    /// <summary>Schedule result shown in the table (for legacy ScheduleRows/DisplayScheduleRows).</summary>
     private ScheduleResult? EffectiveTableResult =>
-        HasExtras && !ShowBaseInTable ? _extraResult : _baseResult;
+        TableScheduleMode == TableScheduleMode.WithExtras ? _extraResult : _baseResult;
 
     partial void OnPrincipalTextChanged(string value) => ScheduleAutoRecalc();
     partial void OnRateTextChanged(string value) => ScheduleAutoRecalc();
     partial void OnTermYearsTextChanged(string value) => ScheduleAutoRecalc();
     partial void OnStartDateChanged(DateTime value) => ScheduleAutoRecalc();
-    partial void OnRecurringExtraTextChanged(string value) => ScheduleAutoRecalc();
-    partial void OnSelectedScenarioChanged(SelectedScenario value) => RefreshScheduleDisplay();
-    partial void OnShowBaseInTableChanged(bool value) => RefreshScheduleDisplay();
+    partial void OnRecurringExtraTextChanged(string value)
+    {
+        ScheduleAutoRecalc();
+        OnPropertyChanged(nameof(ExtrasSummaryText));
+    }
+    partial void OnPropertyValueTextChanged(string value) => ScheduleAutoRecalc();
+    partial void OnTableScheduleModeChanged(TableScheduleMode value)
+    {
+        SyncActiveScheduleRows();
+    }
     partial void OnIsYearlyViewChanged(bool value) => UpdateDisplayScheduleRows();
     partial void OnAutoRecalculateChanged(bool value)
     {
@@ -170,10 +243,22 @@ public sealed partial class MainViewModel : ObservableObject
         InterestSaved = baseResult.Summary.TotalInterest - extraResult.Summary.TotalInterest;
         PaymentsSaved = baseResult.Summary.TotalPayments - extraResult.Summary.TotalPayments;
         OnPropertyChanged(nameof(NewPayoffDate));
+        OnPropertyChanged(nameof(PayoffDateDelta));
+        OnPropertyChanged(nameof(InterestSavedPercent));
+
+        if (!string.IsNullOrWhiteSpace(PropertyValueText))
+        {
+            if (!decimal.TryParse(PropertyValueText, out var pv) || pv <= 0)
+                PropertyValueError = "Enter a valid positive amount.";
+            else
+                PropertyValueError = "";
+        }
+        else
+            PropertyValueError = "";
 
         LastUpdated = DateTime.Now;
-        SelectedScenario = HasExtras ? SelectedScenario.WithExtras : SelectedScenario.Base;
         RefreshScheduleDisplay(baseResult, extraResult);
+        TableScheduleMode = HasExtras ? TableScheduleMode.WithExtras : TableScheduleMode.Base;
     }
 
     [RelayCommand]
@@ -196,9 +281,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         else
         {
-            var result = HasExtras
-                ? (SelectedScheduleTabIndex == 0 ? _baseResult : _extraResult)
-                : _baseResult;
+            var result = TableScheduleMode == TableScheduleMode.Base ? _baseResult : _extraResult;
             if (result == null || result.Rows.Count == 0)
             {
                 _notificationService.ShowError("Export", "No schedule to export. Run Calculate first.");
@@ -228,8 +311,22 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void AddLumpSum()
     {
-        LumpSums.Add(new ExtraPaymentRowViewModel { Date = DateTime.Today, AmountText = "" });
+        LumpSums.Add(CreateExtraPaymentRow(DateTime.Today, ""));
         ScheduleAutoRecalc();
+    }
+
+    private ExtraPaymentRowViewModel CreateExtraPaymentRow(DateTime date, string amountText)
+    {
+        var row = new ExtraPaymentRowViewModel { Date = date, AmountText = amountText };
+        row.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ExtraPaymentRowViewModel.AmountText))
+            {
+                OnPropertyChanged(nameof(ExtrasSummaryText));
+                OnPropertyChanged(nameof(TotalLumpSumAmount));
+            }
+        };
+        return row;
     }
 
     [RelayCommand(CanExecute = nameof(CanRemoveLumpSum))]
@@ -249,9 +346,22 @@ public sealed partial class MainViewModel : ObservableObject
     private void AddQuickLumpSum()
     {
         if (!decimal.TryParse(QuickAddAmountText, out var amount) || amount <= 0) return;
-        LumpSums.Add(new ExtraPaymentRowViewModel { Date = QuickAddDate, AmountText = amount.ToString("F2") });
+        LumpSums.Add(CreateExtraPaymentRow(QuickAddDate, amount.ToString("F2")));
         QuickAddAmountText = "";
         ScheduleAutoRecalc();
+    }
+
+    [RelayCommand]
+    private void ClearRecurring()
+    {
+        RecurringExtraText = "";
+    }
+
+    [RelayCommand]
+    private void RemoveLumpSum(ExtraPaymentRowViewModel? item)
+    {
+        if (item != null && LumpSums.Remove(item))
+            ScheduleAutoRecalc();
     }
 
     [RelayCommand]
@@ -281,15 +391,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    private IReadOnlyList<ScheduleRowViewModel> GetCurrentDisplayRowsForJump()
-    {
-        if (HasExtras)
-        {
-            var rows = SelectedScheduleTabIndex == 0 ? BaseDisplayScheduleRows : ExtraDisplayScheduleRows;
-            return rows;
-        }
-        return BaseDisplayScheduleRows;
-    }
+    private IReadOnlyList<ScheduleRowViewModel> GetCurrentDisplayRowsForJump() => ActiveScheduleRows;
 
     private ScheduleResult? _baseResult;
     private ScheduleResult? _extraResult;
@@ -374,6 +476,8 @@ public sealed partial class MainViewModel : ObservableObject
                 decimal sumScheduledPrincipal = chunk.Sum(r => r.ScheduledPrincipal);
                 decimal sumExtra = chunk.Sum(r => r.ExtraPrincipal);
                 decimal sumTotalPrincipal = chunk.Sum(r => r.TotalPrincipal);
+                decimal sumPaymentAndExtra = sumScheduledPayment + sumExtra;
+                decimal interestPercentYearly = sumPaymentAndExtra > 0 ? sumInterest / sumPaymentAndExtra * 100 : 0;
                 var yearlyRow = new ScheduleRowViewModel(
                     new ScheduleRow(
                         last.PaymentNumber,
@@ -384,7 +488,11 @@ public sealed partial class MainViewModel : ObservableObject
                         sumExtra,
                         sumTotalPrincipal,
                         last.EndingBalance,
-                        last.CumulativeInterest));
+                        last.CumulativeInterest,
+                        last.CumulativeTotalPaid,
+                        last.CumulativePrincipal,
+                        last.PercentPaidOff,
+                        interestPercentYearly));
                 DisplayScheduleRows.Add(yearlyRow);
             }
         }
@@ -395,6 +503,47 @@ public sealed partial class MainViewModel : ObservableObject
         }
         FillDisplayRowsFromResult(BaseDisplayScheduleRows, _baseResult);
         FillDisplayRowsFromResult(ExtraDisplayScheduleRows, _extraResult);
+        ApplyLtvToRows(BaseDisplayScheduleRows);
+        ApplyLtvToRows(ExtraDisplayScheduleRows);
+        SyncActiveScheduleRows();
+    }
+
+    private void ApplyLtvToRows(ObservableCollection<ScheduleRowViewModel> rows)
+    {
+        if (!HasPropertyValue || !decimal.TryParse(PropertyValueText, out var propertyValue) || propertyValue <= 0) return;
+        foreach (var row in rows)
+            row.LoanToValue = row.EndingBalance / propertyValue * 100;
+    }
+
+    private void SyncActiveScheduleRows()
+    {
+        var source = TableScheduleMode == TableScheduleMode.Base ? BaseDisplayScheduleRows : ExtraDisplayScheduleRows;
+        ActiveScheduleRows.Clear();
+        foreach (var row in source)
+            ActiveScheduleRows.Add(row);
+    }
+
+    private static string FormatPayoffDateDelta(DateTime basePayoff, DateTime extraPayoff)
+    {
+        if (extraPayoff >= basePayoff) return "—";
+        var span = basePayoff - extraPayoff;
+        var years = span.Days / 365;
+        var months = (span.Days % 365) / 30;
+        if (years > 0 && months > 0) return $"{years} yr {months} mo sooner";
+        if (years > 0) return $"{years} yr sooner";
+        if (months > 0) return $"{months} mo sooner";
+        return "Sooner";
+    }
+
+    private string BuildExtrasSummaryText()
+    {
+        var parts = new List<string>();
+        if (decimal.TryParse(RecurringExtraText, out var rec) && rec > 0)
+            parts.Add($"{rec:C0}/mo");
+        var count = LumpSums.Count(x => decimal.TryParse(x.AmountText, out var a) && a > 0);
+        if (count > 0)
+            parts.Add(count == 1 ? "1 lump sum" : $"{count} lump sums");
+        return parts.Count == 0 ? "None" : string.Join(" + ", parts);
     }
 
     private void FillDisplayRowsFromResult(ObservableCollection<ScheduleRowViewModel> target, ScheduleResult? result)
@@ -414,6 +563,8 @@ public sealed partial class MainViewModel : ObservableObject
                 decimal sumScheduledPrincipal = chunk.Sum(r => r.ScheduledPrincipal);
                 decimal sumExtra = chunk.Sum(r => r.ExtraPrincipal);
                 decimal sumTotalPrincipal = chunk.Sum(r => r.TotalPrincipal);
+                decimal sumPaymentAndExtra = sumScheduledPayment + sumExtra;
+                decimal interestPercentYearly = sumPaymentAndExtra > 0 ? sumInterest / sumPaymentAndExtra * 100 : 0;
                 target.Add(new ScheduleRowViewModel(new ScheduleRow(
                     last.PaymentNumber,
                     last.PaymentDate,
@@ -423,7 +574,11 @@ public sealed partial class MainViewModel : ObservableObject
                     sumExtra,
                     sumTotalPrincipal,
                     last.EndingBalance,
-                    last.CumulativeInterest)));
+                    last.CumulativeInterest,
+                    last.CumulativeTotalPaid,
+                    last.CumulativePrincipal,
+                    last.PercentPaidOff,
+                    interestPercentYearly)));
             }
         }
         else

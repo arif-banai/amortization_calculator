@@ -30,23 +30,13 @@ public partial class MainWindow : FluentWindow
         vm.GetExportFilePath = GetExportFilePath;
         vm.ScrollToRow = index =>
         {
-            if (vm.HasExtras)
-            {
-                var grid = vm.SelectedScheduleTabIndex == 0 ? BaseScheduleGrid : ExtraScheduleGrid;
-                var rows = vm.SelectedScheduleTabIndex == 0 ? vm.BaseDisplayScheduleRows : vm.ExtraDisplayScheduleRows;
-                if (index >= 0 && index < rows.Count)
-                    grid.ScrollIntoView(rows[index]);
-            }
-            else
-            {
-                if (index >= 0 && index < vm.BaseDisplayScheduleRows.Count)
-                    ScheduleGrid.ScrollIntoView(vm.BaseDisplayScheduleRows[index]);
-            }
+            if (index >= 0 && index < vm.ActiveScheduleRows.Count)
+                ScheduleGrid.ScrollIntoView(vm.ActiveScheduleRows[index]);
         };
         DataContext = vm;
     }
 
-    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
     {
         var settingsVm = new ViewModels.SettingsViewModel(_settingsService);
         var settingsWindow = new Views.SettingsWindow(settingsVm) { Owner = this };

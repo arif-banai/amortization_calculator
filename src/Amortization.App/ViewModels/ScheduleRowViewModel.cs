@@ -15,6 +15,10 @@ public sealed class ScheduleRowViewModel
         TotalPrincipal = row.TotalPrincipal;
         EndingBalance = row.EndingBalance;
         CumulativeInterest = row.CumulativeInterest;
+        CumulativeTotalPaid = row.CumulativeTotalPaid;
+        CumulativePrincipal = row.CumulativePrincipal;
+        PercentPaidOff = row.PercentPaidOff;
+        InterestPercentOfPayment = row.InterestPercentOfPayment;
     }
 
     public int PaymentNumber { get; }
@@ -26,4 +30,10 @@ public sealed class ScheduleRowViewModel
     public decimal TotalPrincipal { get; }
     public decimal EndingBalance { get; }
     public decimal CumulativeInterest { get; }
+    public decimal CumulativeTotalPaid { get; }
+    public decimal CumulativePrincipal { get; }
+    public decimal PercentPaidOff { get; }
+    public decimal InterestPercentOfPayment { get; }
+    /// <summary>Loan-to-value (EndingBalance / PropertyValue * 100). Set by MainViewModel when property value is available.</summary>
+    public decimal? LoanToValue { get; set; }
 }

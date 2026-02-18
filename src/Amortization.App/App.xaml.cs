@@ -1,12 +1,15 @@
 using System.Windows;
 using System.Windows.Threading;
+using Amortization.App.Models;
 using Amortization.App.Services;
+using Wpf.Ui.Appearance;
 
 namespace Amortization.App;
 
 public partial class App : Application
 {
     private ISettingsService? _settingsService;
+    private const int AppThemeMergedDictionaryIndex = 2;
 
     public App()
     {
@@ -16,14 +19,29 @@ public partial class App : Application
 
     public ISettingsService SettingsService => _settingsService ?? throw new InvalidOperationException("Settings not initialized.");
 
+    /// <summary>Swaps the app theme at runtime. Call after settings load or when user changes theme.</summary>
+    public static void SetTheme(AppTheme theme)
+    {
+        var dicts = Current.Resources.MergedDictionaries;
+        if (dicts.Count <= AppThemeMergedDictionaryIndex) return;
+
+        var wpfUiTheme = theme == AppTheme.Dark ? ApplicationTheme.Dark : ApplicationTheme.Light;
+        ApplicationThemeManager.Apply(wpfUiTheme, Wpf.Ui.Controls.WindowBackdropType.None);
+
+        var uri = theme == AppTheme.Dark
+            ? new Uri("pack://application:,,,/Amortization.App;component/Themes/DarkTheme.xaml")
+            : new Uri("pack://application:,,,/Amortization.App;component/Themes/LightTheme.xaml");
+        dicts[AppThemeMergedDictionaryIndex] = new ResourceDictionary { Source = uri };
+    }
+
     private void App_Startup(object sender, StartupEventArgs e)
     {
         try
         {
             _settingsService = new SettingsService();
             _settingsService.Load();
-            ApplyFontSizeFromSettings();
-            _settingsService.SettingsChanged += (_, _) => ApplyFontSizeFromSettings();
+
+            SetTheme(_settingsService.Current.Theme);
 
             var main = new MainWindow(_settingsService);
             main.Show();
@@ -37,13 +55,6 @@ public partial class App : Application
                 MessageBoxImage.Error);
             Shutdown(1);
         }
-    }
-
-    private void ApplyFontSizeFromSettings()
-    {
-        if (_settingsService == null) return;
-        var fontSize = _settingsService.Current.TextSizeToFontSize();
-        Current.Resources["AppFontSize"] = fontSize;
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

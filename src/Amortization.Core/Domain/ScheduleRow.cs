@@ -14,6 +14,10 @@ public sealed class ScheduleRow
     public decimal TotalPrincipal { get; }
     public decimal EndingBalance { get; }
     public decimal CumulativeInterest { get; }
+    public decimal CumulativeTotalPaid { get; }
+    public decimal CumulativePrincipal { get; }
+    public decimal PercentPaidOff { get; }
+    public decimal InterestPercentOfPayment { get; }
 
     public ScheduleRow(
         int paymentNumber,
@@ -24,7 +28,11 @@ public sealed class ScheduleRow
         decimal extraPrincipal,
         decimal totalPrincipal,
         decimal endingBalance,
-        decimal cumulativeInterest)
+        decimal cumulativeInterest,
+        decimal cumulativeTotalPaid,
+        decimal cumulativePrincipal,
+        decimal percentPaidOff,
+        decimal interestPercentOfPayment)
     {
         PaymentNumber = paymentNumber;
         PaymentDate = paymentDate;
@@ -35,5 +43,9 @@ public sealed class ScheduleRow
         TotalPrincipal = totalPrincipal;
         EndingBalance = endingBalance;
         CumulativeInterest = cumulativeInterest;
+        CumulativeTotalPaid = cumulativeTotalPaid;
+        CumulativePrincipal = cumulativePrincipal;
+        PercentPaidOff = percentPaidOff;
+        InterestPercentOfPayment = interestPercentOfPayment;
     }
 }

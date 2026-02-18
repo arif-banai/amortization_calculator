@@ -4,21 +4,49 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:vm="clr-namespace:Amortization.App.ViewModels"
+        xmlns:helpers="clr-namespace:Amortization.App.Helpers"
         Title="Amortization Calculator"
         Width="1100" Height="700"
         MinWidth="900" MinHeight="500"
-        ExtendsContentIntoTitleBar="True">
-    <Grid Margin="12">
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="None"
+        Background="{DynamicResource App.Background}">
+    <Grid Margin="12" Background="{DynamicResource App.Background}">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <ui:TitleBar Grid.Row="0" Title="Amortization Calculator"/>
-        <Border Grid.Row="1" TextElement.FontSize="{DynamicResource AppFontSize}">
+        <Menu Grid.Row="1" Margin="0,4,0,4">
+            <MenuItem Header="_File" Padding="8,4">
+                <MenuItem Header="_Settings" Click="SettingsMenuItem_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Export" Padding="8,4">
+                <MenuItem Header="_Current view" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.Current}"/>
+                <MenuItem Header="_Base schedule" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.Base}"/>
+                <MenuItem Header="_With extras" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.WithExtras}"/>
+            </MenuItem>
+            <MenuItem Header="_View" Padding="8,4">
+                <MenuItem Header="_Compact density" IsCheckable="True" IsChecked="{Binding IsCompactDensity, Mode=TwoWay}" ToolTip="Compact = smaller rows, Comfortable = larger rows"/>
+                <Separator/>
+                <MenuItem Header="Show _extra principal" IsCheckable="True" IsChecked="{Binding ShowExtraPrincipalColumn, Mode=TwoWay}" Margin="0,2"/>
+                <MenuItem Header="Show _total principal" IsCheckable="True" IsChecked="{Binding ShowTotalPrincipalColumn, Mode=TwoWay}" Margin="0,2"/>
+                <MenuItem Header="Show _balance" IsCheckable="True" IsChecked="{Binding ShowBalanceColumn, Mode=TwoWay}" Margin="0,2"/>
+                <MenuItem Header="Show _cumulative interest" IsCheckable="True" IsChecked="{Binding ShowCumulativeInterestColumn, Mode=TwoWay}" Margin="0,2"/>
+                <Separator/>
+                <MenuItem Header="Show cumulative _total paid" IsCheckable="True" IsChecked="{Binding ShowCumulativeTotalPaidColumn, Mode=TwoWay}" Margin="0,2"/>
+                <MenuItem Header="Show cumulative _principal" IsCheckable="True" IsChecked="{Binding ShowCumulativePrincipalColumn, Mode=TwoWay}" Margin="0,2"/>
+                <MenuItem Header="Show _% paid off" IsCheckable="True" IsChecked="{Binding ShowPercentPaidOffColumn, Mode=TwoWay}" Margin="0,2"/>
+                <MenuItem Header="Show _interest % of payment" IsCheckable="True" IsChecked="{Binding ShowInterestPercentColumn, Mode=TwoWay}" Margin="0,2"/>
+                <MenuItem Header="Show _LTV" IsCheckable="True" IsChecked="{Binding ShowLtvColumn, Mode=TwoWay}" Margin="0,2" ToolTip="Requires Property value in Loan details"/>
+            </MenuItem>
+        </Menu>
+        <Border Grid.Row="2">
             <Border.LayoutTransform>
-                <ScaleTransform ScaleX="{Binding Settings.EffectiveZoom, ElementName=ThisWindow}"
-                               ScaleY="{Binding Settings.EffectiveZoom, ElementName=ThisWindow}"/>
+                <ScaleTransform ScaleX="{Binding Settings.Zoom, ElementName=ThisWindow}"
+                               ScaleY="{Binding Settings.Zoom, ElementName=ThisWindow}"/>
             </Border.LayoutTransform>
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -30,7 +58,7 @@
                 <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,16,0">
                     <StackPanel>
                         <!-- Loan Details card -->
-                        <Border BorderBrush="#ccc" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,16" Background="#fafafa">
+                        <Border BorderBrush="{DynamicResource App.Border}" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,16" Background="{DynamicResource App.Surface}">
                             <StackPanel>
                                 <TextBlock Text="Loan details" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
                                 <Grid>
@@ -46,33 +74,56 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <TextBlock Text="Principal ($)" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                                    <TextBox Grid.Column="1" Text="{Binding PrincipalText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Padding="4,2"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PrincipalError}" Foreground="Red" FontSize="11" Margin="0,0,0,6" Visibility="{Binding PrincipalError, Converter={StaticResource StringToVisibility}}"/>
+                                    <TextBox Grid.Column="1" Text="{Binding PrincipalText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Style="{StaticResource AppTextBoxStyle}"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PrincipalError}" Foreground="{DynamicResource App.Error}" FontSize="11" Margin="0,0,0,6" Visibility="{Binding PrincipalError, Converter={StaticResource StringToVisibility}}"/>
                                     <TextBlock Grid.Row="2" Text="Rate (%)" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding RateText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Padding="4,2"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RateError}" Foreground="Red" FontSize="11" Margin="0,0,0,6" Visibility="{Binding RateError, Converter={StaticResource StringToVisibility}}"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding RateText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Style="{StaticResource AppTextBoxStyle}"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RateError}" Foreground="{DynamicResource App.Error}" FontSize="11" Margin="0,0,0,6" Visibility="{Binding RateError, Converter={StaticResource StringToVisibility}}"/>
                                     <TextBlock Grid.Row="4" Text="Term (years)" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                                    <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TermYearsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Padding="4,2"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding TermYearsError}" Foreground="Red" FontSize="11" Margin="0,0,0,6" Visibility="{Binding TermYearsError, Converter={StaticResource StringToVisibility}}"/>
+                                    <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TermYearsText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Style="{StaticResource AppTextBoxStyle}"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding TermYearsError}" Foreground="{DynamicResource App.Error}" FontSize="11" Margin="0,0,0,6" Visibility="{Binding TermYearsError, Converter={StaticResource StringToVisibility}}"/>
                                     <TextBlock Grid.Row="6" Text="First payment date" VerticalAlignment="Center" Margin="0,0,8,6" ToolTip="First payment date is the date of payment #1. Each subsequent payment is one month later."/>
                                     <DatePicker Grid.Row="6" Grid.Column="1" SelectedDate="{Binding StartDate}" SelectedDateFormat="Short" Margin="0,0,0,6" Padding="2" MinWidth="100"/>
+                                    <TextBlock Grid.Row="7" Text="Property value ($)" VerticalAlignment="Center" Margin="0,0,8,6" ToolTip="Optional. Used only for the LTV (loan-to-value) column in the schedule. Leave blank to hide LTV."/>
+                                    <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding PropertyValueText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,2" Style="{StaticResource AppTextBoxStyle}"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding PropertyValueError}" Foreground="{DynamicResource App.Error}" FontSize="11" Margin="0,0,0,6" Visibility="{Binding PropertyValueError, Converter={StaticResource StringToVisibility}}"/>
                                 </Grid>
                             </StackPanel>
                         </Border>
 
-                        <!-- Extra Payments card -->
-                        <Border BorderBrush="#ccc" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,16" Background="#fafafa">
+                        <!-- Extras (Scenario) card -->
+                        <Border BorderBrush="{DynamicResource App.Border}" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,16" Background="{DynamicResource App.Surface}">
                             <StackPanel>
-                                <TextBlock Text="Extra payments" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                                <TextBlock FontWeight="Bold" FontSize="16" Margin="0,0,0,4">
+                                    <Run Text="Extras"/>
+                                    <Run Text=" — " Foreground="{DynamicResource App.TextSecondary}"/>
+                                    <Run Text="{Binding ExtrasSummaryText, Mode=OneWay}" Foreground="{DynamicResource App.TextSecondary}"/>
+                                </TextBlock>
                                 <TextBlock Text="Recurring extra principal (per month)" Margin="0,0,0,4"/>
-                                <TextBox Text="{Binding RecurringExtraText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,4" Padding="4,2"/>
-                                <TextBlock Text="{Binding RecurringExtraError}" Foreground="Red" FontSize="11" Margin="0,0,0,6" Visibility="{Binding RecurringExtraError, Converter={StaticResource StringToVisibility}}"/>
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Text="{Binding RecurringExtraText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,6,0" Style="{StaticResource AppTextBoxStyle}"/>
+                                    <Button Grid.Column="1" Content="Clear recurring" Command="{Binding ClearRecurringCommand}" Padding="6,4"
+                                            Visibility="{Binding RecurringExtraText, Converter={StaticResource StringToVisibility}}"/>
+                                </Grid>
+                                <TextBlock Text="{Binding RecurringExtraError}" Foreground="{DynamicResource App.Error}" FontSize="11" Margin="0,0,0,6" Visibility="{Binding RecurringExtraError, Converter={StaticResource StringToVisibility}}"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <Button Content="+$50" Command="{Binding AddRecurringPresetCommand}" CommandParameter="50" Padding="6,4" Margin="0,0,6,0"/>
-                                    <Button Content="+$100" Command="{Binding AddRecurringPresetCommand}" CommandParameter="100" Padding="6,4" Margin="0,0,6,0"/>
-                                    <Button Content="+$200" Command="{Binding AddRecurringPresetCommand}" CommandParameter="200" Padding="6,4"/>
+                                    <Border Background="{DynamicResource App.SurfaceAlt}" CornerRadius="12" Padding="8,4" Margin="0,0,6,0" Cursor="Hand">
+                                        <Button Content="+$50" Command="{Binding AddRecurringPresetCommand}" CommandParameter="50" Padding="4,2" Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+                                    </Border>
+                                    <Border Background="{DynamicResource App.SurfaceAlt}" CornerRadius="12" Padding="8,4" Margin="0,0,6,0" Cursor="Hand">
+                                        <Button Content="+$100" Command="{Binding AddRecurringPresetCommand}" CommandParameter="100" Padding="4,2" Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+                                    </Border>
+                                    <Border Background="{DynamicResource App.SurfaceAlt}" CornerRadius="12" Padding="8,4" Margin="0,0,0,0" Cursor="Hand">
+                                        <Button Content="+$200" Command="{Binding AddRecurringPresetCommand}" CommandParameter="200" Padding="4,2" Background="Transparent" BorderThickness="0" Cursor="Hand"/>
+                                    </Border>
                                 </StackPanel>
 
                                 <TextBlock Text="Quick-add lump sum" Margin="0,0,0,4"/>
@@ -83,272 +134,314 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <DatePicker SelectedDate="{Binding QuickAddDate}" SelectedDateFormat="Short" Padding="2" Margin="0,0,4,0" MinWidth="100"/>
-                                    <TextBox Grid.Column="1" Text="{Binding QuickAddAmountText, UpdateSourceTrigger=PropertyChanged}" Padding="4,2" Margin="0,0,4,0"/>
-                                    <Button Grid.Column="2" Content="Add" Command="{Binding AddQuickLumpSumCommand}" Padding="8,4"/>
+                                    <TextBox Grid.Column="1" Text="{Binding QuickAddAmountText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" Style="{StaticResource AppTextBoxStyle}"/>
+                                    <Button Grid.Column="2" Content="Add" Command="{Binding AddQuickLumpSumCommand}" Padding="8,4" Style="{StaticResource ButtonAccentStyle}"/>
                                 </Grid>
                                 <TextBlock Text="Lump sums (date + amount)" Margin="0,0,0,4"/>
-                                <DataGrid x:Name="LumpSumsGrid" ItemsSource="{Binding LumpSums}" SelectedIndex="{Binding SelectedLumpSumIndex, Mode=TwoWay}"
-                                          AutoGenerateColumns="False" Height="100" Margin="0,0,0,6"
-                                          CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single">
-                                    <DataGrid.Columns>
-                                        <DataGridTemplateColumn Header="Date" Width="*" MinWidth="95">
-                                            <DataGridTemplateColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <DatePicker SelectedDate="{Binding Date, UpdateSourceTrigger=PropertyChanged}" SelectedDateFormat="Short" BorderThickness="0" Padding="2,0" MinWidth="95"/>
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellTemplate>
-                                        </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="Amount" Binding="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                    <Button Content="Add lump sum" Command="{Binding AddLumpSumCommand}" Padding="8,4" Margin="0,0,8,0"/>
-                                    <Button Content="Remove selected" Command="{Binding RemoveSelectedLumpSumCommand}" Padding="8,4"/>
-                                </StackPanel>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="120" Margin="0,0,0,4">
+                                    <ItemsControl ItemsSource="{Binding LumpSums}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" MinWidth="95"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <DatePicker SelectedDate="{Binding Date, UpdateSourceTrigger=PropertyChanged}" SelectedDateFormat="Short" Padding="2" Margin="0,0,4,0" MinWidth="95"/>
+                                                    <TextBox Grid.Column="1" Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" Style="{StaticResource AppTextBoxStyle}"/>
+                                                    <Button Grid.Column="2" Content="✕" ToolTip="Remove" Command="{Binding DataContext.RemoveLumpSumCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Padding="6,2" MinWidth="28"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                <TextBlock Margin="0,0,0,6" FontSize="12" FontWeight="SemiBold">
+                                    <Run Text="Total lump sums: "/>
+                                    <Run Text="{Binding TotalLumpSumAmount, Mode=OneWay, StringFormat='{}{0:C2}'}"/>
+                                </TextBlock>
+                                <Button Content="Add lump sum" Command="{Binding AddLumpSumCommand}" Padding="8,4" HorizontalAlignment="Left" Style="{StaticResource ButtonAccentStyle}"/>
                             </StackPanel>
                         </Border>
 
                         <CheckBox Content="Auto-recalculate when inputs change" IsChecked="{Binding AutoRecalculate}" Margin="0,0,0,8"/>
-                        <ui:Button Content="Recalculate" Command="{Binding CalculateCommand}" Padding="14,8" FontSize="14" HorizontalAlignment="Stretch" Appearance="Primary"/>
-                        <TextBlock Text="{Binding LastUpdatedText}" FontSize="11" Foreground="Gray" Margin="0,6,0,0" Visibility="{Binding LastUpdatedText, Converter={StaticResource StringToVisibility}}"/>
+                        <Button Content="Recalculate" Command="{Binding CalculateCommand}" Padding="14,8" FontSize="14" HorizontalAlignment="Stretch" Style="{StaticResource ButtonAccentStyle}"/>
+                        <TextBlock Text="{Binding LastUpdatedText}" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,6,0,0" Visibility="{Binding LastUpdatedText, Converter={StaticResource StringToVisibility}}"/>
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- Right: Summary + Toolbar + Schedule (no outer scroll; DataGrid scrolls) -->
+                <!-- Right: Scenario selector + Summary + Toolbar + Schedule (no outer scroll; DataGrid scrolls) -->
                 <Grid Grid.Column="1">
+                    <Grid.Resources>
+                        <helpers:BindingProxy x:Key="ScheduleBindingProxy" Data="{Binding}"/>
+                        <DataTemplate DataType="{x:Type vm:ScheduleSummaryViewModel}" x:Key="ScenarioSummaryRowTemplate">
+                            <StackPanel>
+                                <UniformGrid Columns="4" Margin="0,0,0,6">
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Monthly payment" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,2"/>
+                                        <TextBlock Text="{Binding MonthlyPayment, StringFormat='{}{0:C2}'}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="# Payments" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,2"/>
+                                        <TextBlock Text="{Binding TotalPayments}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Total interest" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,2"/>
+                                        <TextBlock Text="{Binding TotalInterest, StringFormat='{}{0:C2}'}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Total paid" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,2"/>
+                                        <TextBlock Text="{Binding TotalPaid, StringFormat='{}{0:C2}'}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    </StackPanel>
+                                </UniformGrid>
+                                <UniformGrid Columns="4">
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Payoff date" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,2"/>
+                                        <TextBlock Text="{Binding PayoffDate, StringFormat='yyyy-MM-dd'}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Effective term" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,2"/>
+                                        <TextBlock Text="{Binding EffectiveTerm}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Interest share" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,2" ToolTip="Percentage of total paid that goes to interest"/>
+                                        <TextBlock Text="{Binding InterestShare}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    </StackPanel>
+                                    <StackPanel/>
+                                </UniformGrid>
+                            </StackPanel>
+                        </DataTemplate>
+                    </Grid.Resources>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Summary row: Base card | Savings banner or hint | With Extras card (when HasExtras) -->
-                    <Grid Grid.Row="0" Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,6,0">
-                            <StackPanel>
-                                <TextBlock Text="Base schedule" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,4"/>
-                                <TextBlock><Run Text="Payment: "/><Run Text="{Binding BaseSummary.MonthlyPayment, StringFormat='{}{0:C2}'}"/></TextBlock>
-                                <TextBlock><Run Text="Total interest: "/><Run Text="{Binding BaseSummary.TotalInterest, StringFormat='{}{0:C2}'}"/></TextBlock>
-                                <TextBlock><Run Text="Payoff: "/><Run Text="{Binding BaseSummary.PayoffDate, StringFormat='yyyy-MM-dd'}"/></TextBlock>
+                    <!-- Table schedule selector (controls DataGrid only) -->
+                    <StackPanel Grid.Row="2" Margin="0,0,0,10">
+                        <Border BorderBrush="{DynamicResource App.Border}" BorderThickness="1" CornerRadius="6" Padding="4" Margin="0,0,0,6" Background="{DynamicResource App.SurfaceAlt}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Table schedule: " VerticalAlignment="Center" Margin="4,4,0,4" Foreground="{DynamicResource App.TextPrimary}"/>
+                                <RadioButton Content="Base schedule" Style="{StaticResource AppRadioButtonStyle}" IsChecked="{Binding TableScheduleMode, Converter={StaticResource TableScheduleModeConverter}, ConverterParameter=Base, Mode=TwoWay}"
+                                              GroupName="TableSchedule" Margin="4,4" Padding="12,6" VerticalContentAlignment="Center"/>
+                                <RadioButton Content="With extras schedule" Style="{StaticResource AppRadioButtonStyle}" IsChecked="{Binding TableScheduleMode, Converter={StaticResource TableScheduleModeConverter}, ConverterParameter=WithExtras, Mode=TwoWay}"
+                                              GroupName="TableSchedule" Margin="4,4" Padding="12,6" VerticalContentAlignment="Center"
+                                              Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}"/>
                             </StackPanel>
                         </Border>
-                        <!-- Column 1: Savings banner when HasExtras, else single-line hint -->
-                        <Border Grid.Column="1" Padding="12,8" Margin="4,0" CornerRadius="4"
-                                Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}"
-                                Background="#e8f4ea" BorderBrush="#2e7d32" BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock FontWeight="SemiBold" FontSize="12" Margin="0,0,0,4">
-                                    <Run Text="Interest saved: "/><Run Text="{Binding InterestSaved, Mode=OneWay, StringFormat='{}{0:C2}'}"/>
-                                </TextBlock>
-                                <TextBlock FontSize="11">
-                                    <Run Text="Time saved: "/><Run Text="{Binding PaymentsSaved, Mode=OneWay}"/><Run Text=" payments · Payoff: "/><Run Text="{Binding NewPayoffDate, Mode=OneWay, StringFormat='yyyy-MM-dd'}"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Border>
-                        <TextBlock Grid.Column="1" Text="Add extra payments to see savings." FontSize="12" Foreground="Gray" VerticalAlignment="Center" Margin="8,0"
-                                   Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"/>
-                        <!-- Column 2: With extras card only when HasExtras -->
-                        <Border Grid.Column="2" BorderBrush="#ccc" BorderThickness="1" CornerRadius="4" Padding="10" Margin="6,0,0,0"
-                                Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}">
-                            <StackPanel>
-                                <TextBlock Text="With extras" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,4"/>
-                                <TextBlock><Run Text="Payment: "/><Run Text="{Binding ExtraSummary.MonthlyPayment, StringFormat='{}{0:C2}'}"/></TextBlock>
-                                <TextBlock><Run Text="Total interest: "/><Run Text="{Binding ExtraSummary.TotalInterest, StringFormat='{}{0:C2}'}"/></TextBlock>
-                                <TextBlock><Run Text="Payoff: "/><Run Text="{Binding ExtraSummary.PayoffDate, StringFormat='yyyy-MM-dd'}"/></TextBlock>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-
-                    <!-- Toolbar: View | Jump to # | Export | Show base in table | Cumulative interest | Settings -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="View: " VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <RadioButton Content="Monthly" IsChecked="{Binding IsYearlyView, Converter={StaticResource InverseBool}, Mode=TwoWay}" GroupName="ViewMode" Margin="0,0,8,0"/>
-                        <RadioButton Content="Yearly" IsChecked="{Binding IsYearlyView, Mode=TwoWay}" GroupName="ViewMode" Margin="0,0,16,0"/>
-                        <TextBlock Text="Jump to payment #" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBox Text="{Binding JumpToPaymentText, UpdateSourceTrigger=PropertyChanged}" Width="70" Padding="6,4" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <Button Content="Go" Command="{Binding JumpToPaymentCommand}" Padding="8,4" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                        <Menu VerticalAlignment="Center" Margin="0,0,16,0">
-                            <MenuItem Header="Export CSV" Padding="8,4">
-                                <MenuItem Header="Export current view" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.Current}"/>
-                                <MenuItem Header="Export base schedule" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.Base}"/>
-                                <MenuItem Header="Export with extras" Command="{Binding ExportCsvCommand}" CommandParameter="{x:Static vm:ExportScope.WithExtras}"/>
-                            </MenuItem>
-                        </Menu>
-                        <Button x:Name="SettingsButton" ToolTip="Settings" Margin="0,0,0,0" Padding="8,4" VerticalAlignment="Center" Click="SettingsButton_Click">
-                            <Button.Content>
-                                <ui:SymbolIcon Symbol="Settings24"/>
-                            </Button.Content>
-                        </Button>
                     </StackPanel>
 
-                    <!-- Schedule: tabs when HasExtras, single grid when not -->
-                    <TabControl Grid.Row="2" x:Name="ScheduleTabControl" SelectedIndex="{Binding SelectedScheduleTabIndex, Mode=TwoWay}" Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}">
-                        <TabItem Header="Base schedule">
-                            <DataGrid x:Name="BaseScheduleGrid" ItemsSource="{Binding BaseDisplayScheduleRows}" AutoGenerateColumns="False"
-                                      FrozenColumnCount="2" RowHeight="30"
-                                      IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
-                                      AlternatingRowBackground="#f0f4f8" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
-                                <DataGrid.ColumnHeaderStyle>
-                                    <Style TargetType="DataGridColumnHeader">
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="Padding" Value="6,6"/>
-                                    </Style>
-                                </DataGrid.ColumnHeaderStyle>
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="#" Binding="{Binding PaymentNumber}" Width="44" MinWidth="44"/>
-                                    <DataGridTextColumn Header="Date" Binding="{Binding PaymentDate, StringFormat='yyyy-MM-dd'}" Width="100" MinWidth="92"/>
-                                    <DataGridTextColumn Header="Payment" Binding="{Binding ScheduledPayment, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Interest" Binding="{Binding Interest, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Principal" Binding="{Binding ScheduledPrincipal, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Extra" Binding="{Binding ExtraPrincipal, StringFormat='{}{0:C2}'}" MinWidth="72" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Total Principal" Binding="{Binding TotalPrincipal, StringFormat='{}{0:C2}'}" MinWidth="96" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Balance" Binding="{Binding EndingBalance, StringFormat='{}{0:C2}'}" MinWidth="92" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Cumulative Interest" Binding="{Binding CumulativeInterest, StringFormat='{}{0:C2}'}" MinWidth="110" Width="*" >
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </TabItem>
-                        <TabItem Header="With extras">
-                            <DataGrid x:Name="ExtraScheduleGrid" ItemsSource="{Binding ExtraDisplayScheduleRows}" AutoGenerateColumns="False"
-                                      FrozenColumnCount="2" RowHeight="30"
-                                      IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
-                                      AlternatingRowBackground="#f0f4f8" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
-                                <DataGrid.ColumnHeaderStyle>
-                                    <Style TargetType="DataGridColumnHeader">
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="Padding" Value="6,6"/>
-                                    </Style>
-                                </DataGrid.ColumnHeaderStyle>
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="#" Binding="{Binding PaymentNumber}" Width="44" MinWidth="44"/>
-                                    <DataGridTextColumn Header="Date" Binding="{Binding PaymentDate, StringFormat='yyyy-MM-dd'}" Width="100" MinWidth="92"/>
-                                    <DataGridTextColumn Header="Payment" Binding="{Binding ScheduledPayment, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Interest" Binding="{Binding Interest, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Principal" Binding="{Binding ScheduledPrincipal, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Extra" Binding="{Binding ExtraPrincipal, StringFormat='{}{0:C2}'}" MinWidth="72" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Total Principal" Binding="{Binding TotalPrincipal, StringFormat='{}{0:C2}'}" MinWidth="96" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Balance" Binding="{Binding EndingBalance, StringFormat='{}{0:C2}'}" MinWidth="92" Width="*">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                    <DataGridTextColumn Header="Cumulative Interest" Binding="{Binding CumulativeInterest, StringFormat='{}{0:C2}'}" MinWidth="110" Width="*" >
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </TabItem>
-                    </TabControl>
-                    <DataGrid Grid.Row="2" x:Name="ScheduleGrid" ItemsSource="{Binding BaseDisplayScheduleRows}" AutoGenerateColumns="False"
-                              Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
-                              FrozenColumnCount="2" RowHeight="30"
+                    <!-- Comparison header: Base row, With extras row (when HasExtras), Savings strip (when HasExtras) -->
+                    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                        <!-- Base row: highlight when table is showing base schedule -->
+                        <Border x:Name="BaseSummaryBorder" BorderBrush="{DynamicResource App.Border}" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,6" Background="{DynamicResource App.Surface}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsBaseTableMode}" Value="True">
+                                            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource App.Accent}"/>
+                                            <Setter Property="Background" Value="{DynamicResource App.AccentLight}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Base" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="{DynamicResource App.TextPrimary}"/>
+                                <ContentPresenter Grid.Column="1" Content="{Binding BaseSummary}" ContentTemplate="{StaticResource ScenarioSummaryRowTemplate}"/>
+                            </Grid>
+                        </Border>
+                        <!-- With extras row: visible when HasExtras, highlight when table is showing with-extras schedule -->
+                        <Border x:Name="ExtrasSummaryBorder" BorderBrush="{DynamicResource App.Border}" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,6" Background="{DynamicResource App.Surface}"
+                                Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsExtrasTableMode}" Value="True">
+                                            <Setter Property="BorderThickness" Value="3,1,1,1"/>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource App.Accent}"/>
+                                            <Setter Property="Background" Value="{DynamicResource App.AccentLight}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="With extras" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="{DynamicResource App.TextPrimary}"/>
+                                <ContentPresenter Grid.Column="1" Content="{Binding ExtraSummary}" ContentTemplate="{StaticResource ScenarioSummaryRowTemplate}"/>
+                            </Grid>
+                        </Border>
+                        <!-- Savings strip: visible when HasExtras; Interest saved, Payments saved, Payoff moved up -->
+                        <Border Padding="12,8" CornerRadius="4" Background="{DynamicResource App.SuccessTint}" BorderBrush="{DynamicResource App.Border}" BorderThickness="1"
+                                Visibility="{Binding HasExtras, Converter={StaticResource BoolToVisibility}}">
+                            <UniformGrid Columns="3">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                    <TextBlock Text="Interest saved: " FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    <TextBlock Text="{Binding InterestSaved, StringFormat='{}{0:C2}'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource App.Success}" VerticalAlignment="Center"/>
+                                    <TextBlock Text=" " FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding InterestSavedPercent}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource App.Success}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                    <TextBlock Text="Payments saved: " FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    <TextBlock Text="{Binding PaymentsSaved}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource App.Success}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Payoff moved up: " FontSize="12" VerticalAlignment="Center" Foreground="{DynamicResource App.TextPrimary}"/>
+                                    <TextBlock Text="{Binding PayoffDateDelta}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource App.Success}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </UniformGrid>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Toolbar: View | Jump to # -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="View: " VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource App.TextPrimary}"/>
+                        <RadioButton Content="Monthly" Style="{StaticResource AppRadioButtonStyle}" IsChecked="{Binding IsYearlyView, Converter={StaticResource InverseBool}, Mode=TwoWay}" GroupName="ViewMode" Margin="0,0,8,0"/>
+                        <RadioButton Content="Yearly" Style="{StaticResource AppRadioButtonStyle}" IsChecked="{Binding IsYearlyView, Mode=TwoWay}" GroupName="ViewMode" Margin="0,0,16,0"/>
+                        <TextBlock Text="Jump to payment #" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="{DynamicResource App.TextPrimary}"/>
+                        <TextBox Text="{Binding JumpToPaymentText, UpdateSourceTrigger=PropertyChanged}" Width="70" VerticalAlignment="Center" Margin="0,0,4,0" Style="{StaticResource AppTextBoxStyle}"/>
+                        <Button Content="Go" Command="{Binding JumpToPaymentCommand}" Padding="8,4" VerticalAlignment="Center" Margin="0,0,0,0" Style="{StaticResource ButtonAccentStyle}"/>
+                    </StackPanel>
+
+                    <!-- Schedule: label/hint in Auto row, DataGrid in * row so it gets constrained height and scrolls -->
+                    <Grid Grid.Row="3">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Margin="0,0,0,4">
+                            <TextBlock Text="{Binding GridViewingLabel, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding GridViewingHint, Mode=OneWay}" FontSize="11" Foreground="{DynamicResource App.TextSecondary}" Margin="0,0,0,4"
+                                       Visibility="{Binding GridViewingHint, Converter={StaticResource StringToVisibility}}"/>
+                        </StackPanel>
+                        <DataGrid Grid.Row="1" x:Name="ScheduleGrid" ItemsSource="{Binding ActiveScheduleRows}" AutoGenerateColumns="False"
+                              FrozenColumnCount="2" RowHeight="{Binding ScheduleRowHeight}"
+                              FontSize="14"
                               IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
-                              AlternatingRowBackground="#f0f4f8" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                              AlternatingRowBackground="{DynamicResource App.SurfaceAlt}" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                              Background="{DynamicResource App.Surface}" BorderBrush="{DynamicResource App.Border}" RowStyle="{StaticResource AppDataGridRowStyle}">
                         <DataGrid.ColumnHeaderStyle>
-                            <Style TargetType="DataGridColumnHeader">
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                <Setter Property="Padding" Value="6,6"/>
-                            </Style>
+                            <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource AppDataGridColumnHeaderStyle}"/>
                         </DataGrid.ColumnHeaderStyle>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="#" Binding="{Binding PaymentNumber}" Width="44" MinWidth="44"/>
-                            <DataGridTextColumn Header="Date" Binding="{Binding PaymentDate, StringFormat='yyyy-MM-dd'}" Width="100" MinWidth="92"/>
-                            <DataGridTextColumn Header="Payment" Binding="{Binding ScheduledPayment, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
+                            <DataGridTextColumn Width="44" MinWidth="44">
+                                <DataGridTextColumn.Header><TextBlock Text="#" ToolTip="Payment number"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="PaymentNumber"/></DataGridTextColumn.Binding>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Width="100" MinWidth="92">
+                                <DataGridTextColumn.Header><TextBlock Text="Date" ToolTip="Payment date"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="PaymentDate" StringFormat="yyyy-MM-dd"/></DataGridTextColumn.Binding>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="88" Width="*">
+                                <DataGridTextColumn.Header><TextBlock Text="Payment" ToolTip="Scheduled payment amount for this period"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="ScheduledPayment" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="Interest" Binding="{Binding Interest, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
+                            <DataGridTextColumn MinWidth="88" Width="*">
+                                <DataGridTextColumn.Header><TextBlock Text="Interest" ToolTip="Interest portion of the payment"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="Interest" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="Principal" Binding="{Binding ScheduledPrincipal, StringFormat='{}{0:C2}'}" MinWidth="88" Width="*">
+                            <DataGridTextColumn MinWidth="88" Width="*">
+                                <DataGridTextColumn.Header><TextBlock Text="Principal" ToolTip="Scheduled principal portion of the payment (minimum applied to balance)"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="ScheduledPrincipal" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="Extra" Binding="{Binding ExtraPrincipal, StringFormat='{}{0:C2}'}" MinWidth="72" Width="*">
+                            <DataGridTextColumn MinWidth="72" Width="*"
+                                                Visibility="{Binding Data.ShowExtraPrincipalColumnInTable, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="Extra" ToolTip="Additional principal paid beyond the minimum (extra payments)"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="ExtraPrincipal" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="Total Principal" Binding="{Binding TotalPrincipal, StringFormat='{}{0:C2}'}" MinWidth="96" Width="*">
+                            <DataGridTextColumn MinWidth="96" Width="*"
+                                                Visibility="{Binding Data.ShowTotalPrincipalColumnInTable, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="Total Principal" ToolTip="Principal + Extra combined (total principal applied this period)"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="TotalPrincipal" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="Balance" Binding="{Binding EndingBalance, StringFormat='{}{0:C2}'}" MinWidth="92" Width="*">
+                            <DataGridTextColumn MinWidth="92" Width="*"
+                                                Visibility="{Binding Data.ShowBalanceColumn, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="Balance" ToolTip="Remaining balance after this payment"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="EndingBalance" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="Cumulative Interest" Binding="{Binding CumulativeInterest, StringFormat='{}{0:C2}'}" MinWidth="110" Width="*" >
+                            <DataGridTextColumn MinWidth="110" Width="*"
+                                                Visibility="{Binding Data.ShowCumulativeInterestColumn, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="Cumulative Interest" ToolTip="Total interest paid up to and including this payment"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="CumulativeInterest" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="110" Width="*"
+                                                Visibility="{Binding Data.ShowCumulativeTotalPaidColumn, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="Cumulative Total Paid" ToolTip="Running total of all payments made so far"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="CumulativeTotalPaid" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="100" Width="*"
+                                                Visibility="{Binding Data.ShowCumulativePrincipalColumn, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="Cumulative Principal" ToolTip="Running total of principal paid so far"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="CumulativePrincipal" StringFormat="{}{0:C2}"/></DataGridTextColumn.Binding>
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="80" Width="*"
+                                                Visibility="{Binding Data.ShowPercentPaidOffColumn, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="% Paid Off" ToolTip="Percentage of original loan principal repaid so far"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="PercentPaidOff" StringFormat="{}{0:F1}%"/></DataGridTextColumn.Binding>
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="90" Width="*"
+                                                Visibility="{Binding Data.ShowInterestPercentColumn, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="Interest %" ToolTip="Percentage of this payment that went to interest"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="InterestPercentOfPayment" StringFormat="{}{0:F1}%"/></DataGridTextColumn.Binding>
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn MinWidth="70" Width="*"
+                                                Visibility="{Binding Data.ShowLtvColumnInTable, Source={StaticResource ScheduleBindingProxy}, Converter={StaticResource BoolToVisibility}}">
+                                <DataGridTextColumn.Header><TextBlock Text="LTV" ToolTip="Loan-to-value: remaining balance as % of property value"/></DataGridTextColumn.Header>
+                                <DataGridTextColumn.Binding><Binding Path="LoanToValue" StringFormat="{}{0:F1}%"/></DataGridTextColumn.Binding>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
-                    <ContentControl x:Name="ChartHost" Grid.Row="3" Margin="0,8,0,0" MinHeight="60" Visibility="Collapsed"/>
+                    </Grid>
+                    <ContentControl x:Name="ChartHost" Grid.Row="4" Margin="0,8,0,0" MinHeight="60" Visibility="Collapsed"/>
                 </Grid>
             </Grid>
         </Border>
-        <ui:SnackbarPresenter Grid.Row="2" x:Name="SnackbarPresenter"/>
+        <ui:SnackbarPresenter Grid.Row="3" x:Name="SnackbarPresenter"/>
     </Grid>
 </ui:FluentWindow>

@@ -1,4 +1,3 @@
-using System.Windows;
 using Amortization.App.Models;
 using Amortization.App.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,50 +10,43 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
 
     [ObservableProperty]
-    private TextSizeKind _textSize;
-
-    [ObservableProperty]
-    private bool _useZoom;
-
-    [ObservableProperty]
     private double _zoom;
+
+    [ObservableProperty]
+    private AppTheme _theme;
 
     public SettingsViewModel(ISettingsService settingsService)
     {
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
-        var s = _settingsService.Current;
-        _textSize = s.TextSize;
-        _useZoom = s.UseZoom;
-        _zoom = s.Zoom;
+        _zoom = _settingsService.Current.Zoom;
+        _theme = _settingsService.Current.Theme;
     }
 
-    public string ZoomPercentText => $"{Zoom * 100:F0}%";
+    public string ScalePercentText => $"{Zoom * 100:F0}%";
 
-    public TextSizeKind[] TextSizeOptions { get; } = [TextSizeKind.Small, TextSizeKind.Medium, TextSizeKind.Large];
-
-    partial void OnTextSizeChanged(TextSizeKind value) => ApplyAndSave();
-    partial void OnUseZoomChanged(bool value) => ApplyAndSave();
     partial void OnZoomChanged(double value)
     {
-        OnPropertyChanged(nameof(ZoomPercentText));
+        OnPropertyChanged(nameof(ScalePercentText));
+        ApplyAndSave();
+    }
+
+    partial void OnThemeChanged(AppTheme value)
+    {
+        App.SetTheme(value);
         ApplyAndSave();
     }
 
     [RelayCommand]
     private void ResetToDefaults()
     {
-        TextSize = TextSizeKind.Medium;
         Zoom = 1.0;
-        UseZoom = false;
+        Theme = AppTheme.Light;
     }
 
     private void ApplyAndSave()
     {
-        var s = _settingsService.Current;
-        s.TextSize = TextSize;
-        s.UseZoom = UseZoom;
-        s.Zoom = Zoom;
+        _settingsService.Current.Zoom = Zoom;
+        _settingsService.Current.Theme = Theme;
         _settingsService.Save();
-        Application.Current.Resources["AppFontSize"] = s.TextSizeToFontSize();
     }
 }
