@@ -29,3 +29,7 @@ dotnet publish src/Amortization.App -c Release
 ```
 
 The self-contained single-file executable will be at `src/Amortization.App/bin/Release/net10.0-windows/win-x64/publish/Amortization.App.exe`.
+
+## License
+
+[Apache License 2.0](LICENSE)
