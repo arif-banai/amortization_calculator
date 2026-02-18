@@ -1,0 +1,45 @@
+<Window x:Class="Amortization.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:Amortization.App.Converters"
+        Title="Settings"
+        Width="380" Height="340"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+    </Window.Resources>
+    <StackPanel Margin="24">
+        <TextBlock Text="Settings" FontWeight="Bold" FontSize="18" Margin="0,0,0,16"/>
+
+        <!-- Text size -->
+        <TextBlock Text="Text size" FontWeight="SemiBold" Margin="0,0,0,6"/>
+        <ComboBox ItemsSource="{Binding TextSizeOptions}"
+                  SelectedItem="{Binding TextSize, Mode=TwoWay}"
+                  Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+        <TextBlock Text="Adjusts the font size throughout the app." FontSize="11" Foreground="Gray" Margin="0,0,0,16"/>
+
+        <!-- Zoom -->
+        <CheckBox Content="Enable zoom" IsChecked="{Binding UseZoom}" Margin="0,0,0,8"/>
+        <TextBlock Text="Scales the entire interface proportionally." FontSize="11" Foreground="Gray" Margin="0,0,0,4"
+                   Visibility="{Binding UseZoom, Converter={StaticResource BoolToVisibility}}"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,4"
+                    Visibility="{Binding UseZoom, Converter={StaticResource BoolToVisibility}}">
+            <Slider Value="{Binding Zoom, Mode=TwoWay}"
+                    Minimum="0.8" Maximum="1.5"
+                    TickFrequency="0.05"
+                    IsSnapToTickEnabled="True"
+                    Width="200"
+                    VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding ZoomPercentText}" Margin="8,0,0,0" VerticalAlignment="Center" Width="50"/>
+        </StackPanel>
+
+        <!-- Reset -->
+        <Button Content="Reset to defaults"
+                Command="{Binding ResetToDefaultsCommand}"
+                Padding="12,6"
+                Margin="0,20,0,0"
+                HorizontalAlignment="Left"/>
+    </StackPanel>
+</Window>

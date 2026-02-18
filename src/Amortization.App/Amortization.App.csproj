@@ -20,7 +20,10 @@
     <DebugType>none</DebugType>
   </PropertyGroup>
 
+  <!-- Future: add LiveChartsCore.SkiaSharpView.WPF for chart in main view -->
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="WPF-UI" Version="4.2.0" />
     <ProjectReference Include="..\Amortization.Core\Amortization.Core.csproj" />
   </ItemGroup>
 

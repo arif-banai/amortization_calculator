@@ -1,21 +1,56 @@
 using System.Windows;
 using Microsoft.Win32;
+using Amortization.App.Models;
+using Amortization.App.Services;
+using Wpf.Ui.Controls;
 
 namespace Amortization.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : FluentWindow
 {
-    public MainWindow()
+    private readonly ISettingsService _settingsService;
+    private INotificationService _notificationService = null!;
+
+    public AppSettings Settings => _settingsService.Current;
+
+    public MainWindow(ISettingsService settingsService)
     {
+        _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         InitializeComponent();
-        var vm = (ViewModels.MainViewModel)DataContext;
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= OnLoaded;
+        var snackbarService = new Wpf.Ui.SnackbarService();
+        snackbarService.SetSnackbarPresenter(SnackbarPresenter);
+        _notificationService = new SnackbarNotificationService(snackbarService);
+        var vm = new ViewModels.MainViewModel(_notificationService);
         vm.GetExportFilePath = GetExportFilePath;
-        vm.ShowMessage = msg => MessageBox.Show(msg, "Amortization Calculator", MessageBoxButton.OK, MessageBoxImage.Information);
         vm.ScrollToRow = index =>
         {
-            if (index >= 0 && index < vm.DisplayScheduleRows.Count)
-                ScheduleGrid.ScrollIntoView(vm.DisplayScheduleRows[index]);
+            if (vm.HasExtras)
+            {
+                var grid = vm.SelectedScheduleTabIndex == 0 ? BaseScheduleGrid : ExtraScheduleGrid;
+                var rows = vm.SelectedScheduleTabIndex == 0 ? vm.BaseDisplayScheduleRows : vm.ExtraDisplayScheduleRows;
+                if (index >= 0 && index < rows.Count)
+                    grid.ScrollIntoView(rows[index]);
+            }
+            else
+            {
+                if (index >= 0 && index < vm.BaseDisplayScheduleRows.Count)
+                    ScheduleGrid.ScrollIntoView(vm.BaseDisplayScheduleRows[index]);
+            }
         };
+        DataContext = vm;
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsVm = new ViewModels.SettingsViewModel(_settingsService);
+        var settingsWindow = new Views.SettingsWindow(settingsVm) { Owner = this };
+        settingsWindow.ShowDialog();
     }
 
     private string? GetExportFilePath()

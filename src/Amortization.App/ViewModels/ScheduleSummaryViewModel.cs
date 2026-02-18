@@ -1,21 +1,24 @@
-using System.ComponentModel;
 using Amortization.Core.Domain;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Amortization.App.ViewModels;
 
-public sealed class ScheduleSummaryViewModel : INotifyPropertyChanged
+public sealed partial class ScheduleSummaryViewModel : ObservableObject
 {
+    [ObservableProperty]
     private decimal _monthlyPayment;
-    private int _totalPayments;
-    private decimal _totalInterest;
-    private decimal _totalPaid;
-    private DateTime _payoffDate;
 
-    public decimal MonthlyPayment { get => _monthlyPayment; set { _monthlyPayment = value; OnPropertyChanged(nameof(MonthlyPayment)); } }
-    public int TotalPayments { get => _totalPayments; set { _totalPayments = value; OnPropertyChanged(nameof(TotalPayments)); } }
-    public decimal TotalInterest { get => _totalInterest; set { _totalInterest = value; OnPropertyChanged(nameof(TotalInterest)); } }
-    public decimal TotalPaid { get => _totalPaid; set { _totalPaid = value; OnPropertyChanged(nameof(TotalPaid)); } }
-    public DateTime PayoffDate { get => _payoffDate; set { _payoffDate = value; OnPropertyChanged(nameof(PayoffDate)); } }
+    [ObservableProperty]
+    private int _totalPayments;
+
+    [ObservableProperty]
+    private decimal _totalInterest;
+
+    [ObservableProperty]
+    private decimal _totalPaid;
+
+    [ObservableProperty]
+    private DateTime _payoffDate;
 
     public void SetFrom(ScheduleSummary? summary)
     {
@@ -26,7 +29,4 @@ public sealed class ScheduleSummaryViewModel : INotifyPropertyChanged
         TotalPaid = summary.TotalPaid;
         PayoffDate = summary.PayoffDate;
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

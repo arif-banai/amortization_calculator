@@ -1,24 +1,12 @@
-using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Amortization.App.ViewModels;
 
-public sealed class ExtraPaymentRowViewModel : INotifyPropertyChanged
+public sealed partial class ExtraPaymentRowViewModel : ObservableObject
 {
+    [ObservableProperty]
     private DateTime _date = DateTime.Today;
+
+    [ObservableProperty]
     private string _amountText = "";
-
-    public DateTime Date
-    {
-        get => _date;
-        set { _date = value; OnPropertyChanged(nameof(Date)); }
-    }
-
-    public string AmountText
-    {
-        get => _amountText;
-        set { _amountText = value ?? ""; OnPropertyChanged(nameof(AmountText)); }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
